@@ -1,5 +1,9 @@
 # Keboola Connection writer for Geneea Frida app
 
+Integration of the [Geneea Frida](https://frida.geneea.com) with [Keboola Connection](https://connection.keboola.com).
+
+This is a Docker container used for exporting Geneea NLP analysis results from KBC to Frida app.
+Automatically built Docker images are available at [Docker Hub Registry](https://hub.docker.com/r/geneea/keboola-frida-writer/).
 
 ## Building a container
 To build this container manually one can use:
