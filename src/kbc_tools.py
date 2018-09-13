@@ -20,6 +20,15 @@ READ_TIMEOUT = 128
 csv.field_size_limit(100 * 2 ** 20)
 
 
+def slice_stream(iterator, size):
+    while True:
+        chunk = tuple(itertools.islice(iterator, size))
+        if not chunk:
+            return
+        else:
+            yield chunk
+
+
 def read_csv(input_file):
     safe_input = (line.replace('\0', '') for line in input_file)
     reader = csv.DictReader(safe_input, dialect='kbc')
@@ -36,26 +45,30 @@ def read_csv(input_file):
             sys.stderr.flush()
 
 
-def make_request(doc, *, url, customerId, username, password, session=None, doc_id_key='id'):
+def make_batch_request(batch, req_obj, *, url, customerId, username, password, session=None, doc_id_key='id', docs_key='documents'):
+    auth = HTTPBasicAuth(username, password)
     headers = {
         'Content-Type': 'application/json',
         'X-Customer-ID': f'KBC-{customerId}'
     }
-    auth = HTTPBasicAuth(username, password)
+    req = {}
+    req.update(req_obj)
+    req[docs_key] = list(batch)
 
-    res = json_post(url, headers, auth, doc, session=session)
+    res = json_post(url, auth, headers, req, session=session)
     if not res:
-        print(f'failed to process document id={doc[doc_id_key]}', file=sys.stdout)
+        ids = ' '.join(doc[doc_id_key] for doc in batch)
+        print(f'failed to process documents: {ids}', file=sys.stdout)
         print('if the problems persist, please contact our support at support@geneea.com', file=sys.stderr)
         sys.stderr.flush()
 
     return res
 
 
-def json_post(url, headers, auth, data, session=None):
+def json_post(url, auth, headers, data, session=None):
     post = session.post if session else requests.post
     try:
-        response = post(url, headers=headers, auth=auth, data=json.dumps(data), timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+        response = post(url, auth=auth, headers=headers, data=json.dumps(data), timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
         code = response.status_code
         if code >= 400:
             try:

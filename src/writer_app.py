@@ -1,6 +1,7 @@
 # coding=utf-8
 # Python 3
 
+import itertools
 import json
 import os
 import re
@@ -12,9 +13,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 from keboola import docker
 
-from kbc_tools import read_csv, make_request, parallel_map, deserialize_data
+from kbc_tools import read_csv, slice_stream, make_batch_request, parallel_map, deserialize_data
 
 FRIDA_URL = 'https://frida.geneea.com/services/franz'
+DOC_BATCH_SIZE = 5
 THREAD_COUNT = 1
 
 DATASET_RE = re.compile(r'^[0-9a-zA-Z_\-]+$')
@@ -37,6 +39,7 @@ class Params:
         self.meta_cols = params.get('metadata', [])
 
         advanced_params = self.get_advanced_params()
+        self.doc_batch_size = int(advanced_params.get('doc_batch_size', DOC_BATCH_SIZE))
         self.thread_count = int(advanced_params.get('thread_count', THREAD_COUNT))
 
         self.validate()
@@ -115,17 +118,29 @@ class WriterApp:
 
     def inject(self, row_stream):
         url = f'{FRIDA_URL}/datasets/{self.params.dataset}/documents/update'
+        req = self.get_request()
+        batch_stream = self.doc_batch_stream(row_stream)
 
-        doc_stream = map(self.row_to_doc, row_stream)
         with requests.Session() as session:
             with ThreadPoolExecutor(max_workers=self.params.thread_count) as executor:
                 for res in parallel_map(
-                        executor, make_request, doc_stream,
+                        executor, make_batch_request,
+                        batch_stream, itertools.repeat(req),
                         url=url, customerId=self.params.customer_id,
                         username=self.params.username, password=self.params.password,
                         session=session
                 ):
                     yield res
+
+    def get_request(self):
+        req = {}
+        if self.params.meta_cols:
+            req['metadata'] = [f'f_{meta_col}' for meta_col in self.params.meta_cols]
+        return req
+
+    def doc_batch_stream(self, row_stream):
+        for rows in slice_stream(row_stream, self.params.doc_batch_size):
+            yield list(map(self.row_to_doc, rows))
 
     def row_to_doc(self, row):
         analysis = deserialize_data(row[self.params.data_col])
