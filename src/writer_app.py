@@ -31,12 +31,16 @@ class Params:
         self.source_tab_path = self.get_source_tab_path()
 
         params = config.get_parameters()
+        columns = params.get('columns', {})
+        if not isinstance(columns, dict):
+            columns = {}
+
         self.dataset = params.get('dataset')
         self.username = params.get('username')
         self.password = params.get('password')
-        self.id_col = params.get('id')
-        self.data_col = params.get('binaryData')
-        self.meta_cols = params.get('metadata', [])
+        self.id_col = columns.get('id')
+        self.data_col = columns.get('binaryData')
+        self.meta_cols = columns.get('metadata', [])
 
         advanced_params = self.get_advanced_params()
         self.doc_batch_size = int(advanced_params.get('doc_batch_size', DOC_BATCH_SIZE))
@@ -64,9 +68,9 @@ class Params:
         if not self.username or not self.password:
             raise ValueError('the "username" and "password" are required parameters')
         if not self.id_col or not self.data_col:
-            raise ValueError('the "id" and "binaryData" are required parameters')
+            raise ValueError('the "columns.id" and "columns.binaryData" are required parameters')
         if self.meta_cols and not isinstance(self.meta_cols, list):
-            raise ValueError('invalid "metadata" parameter, it needs to be an array of column names')
+            raise ValueError('invalid "columns.metadata" parameter, it needs to be an array of column names')
         if self.thread_count > 8:
             raise ValueError('the "thread_count" parameter can not be greater than 8')
 

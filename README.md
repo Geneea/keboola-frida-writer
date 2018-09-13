@@ -24,3 +24,30 @@ sudo docker run \
 geneea/keboola-frida-writer:latest
 ```
 Note: `--volume` needs to be adjusted accordingly.
+
+## Sample configuration
+Mapped to `/data/config.json`
+
+```
+{
+  "storage": {
+    "input": {
+      "tables": [
+        {
+          "destination": "analysis-result-full.csv"
+        }
+      ]
+    }
+  },
+  "parameters": {
+    "dataset": "<ENTER TARGET DATASET HERE>",
+    "username": "<ENTER FRIDA USERNAME HERE>",
+    "password": "<ENTER FRIDA PASSWORD HERE>",
+    "columns": {
+      "id": "doc_id",
+      "binaryData": "binaryData",
+      "metadata": ["meta_1", "meta_2"]
+    }
+  }
+}
+```
