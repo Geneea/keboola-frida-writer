@@ -42,7 +42,7 @@ Mapped to `/data/config.json`
   "parameters": {
     "dataset": "<ENTER TARGET DATASET HERE>",
     "username": "<ENTER FRIDA USERNAME HERE>",
-    "password": "<ENTER FRIDA PASSWORD HERE>",
+    "#password": "<ENTER FRIDA PASSWORD HERE>",
     "columns": {
       "id": "doc_id",
       "binaryData": "binaryData",

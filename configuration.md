@@ -1,7 +1,7 @@
 Parameters:
 * `dataset` - the name of the target dataset in Frida 
 * `username` - Frida username to be used for authentication
-* `password` - Frida password to be used for authentication
+* `#password` - Frida password to be used for authentication
 * `advanced` - additional parameters as a JSON object (use only when instructed to do so)
 
 Input:

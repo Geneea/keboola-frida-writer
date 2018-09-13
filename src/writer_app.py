@@ -37,7 +37,7 @@ class Params:
 
         self.dataset = params.get('dataset')
         self.username = params.get('username')
-        self.password = params.get('password')
+        self.password = params.get('#password')
         self.id_col = columns.get('id')
         self.data_col = columns.get('binaryData')
         self.meta_cols = columns.get('metadata', [])
@@ -66,7 +66,7 @@ class Params:
         if not self.dataset or not DATASET_RE.match(self.dataset):
             raise ValueError('invalid "dataset" parameter')
         if not self.username or not self.password:
-            raise ValueError('the "username" and "password" are required parameters')
+            raise ValueError('the "username" and "#password" are required parameters')
         if not self.id_col or not self.data_col:
             raise ValueError('the "columns.id" and "columns.binaryData" are required parameters')
         if self.meta_cols and not isinstance(self.meta_cols, list):
