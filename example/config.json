@@ -3,7 +3,7 @@
     "input": {
       "tables": [
         {
-          "destination": "source.csv"
+          "destination": "analysis-result-full.csv"
         }
       ]
     }

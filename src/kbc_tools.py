@@ -62,7 +62,7 @@ def make_batch_request(batch, req_obj, *, url, customerId, username, password, s
         print('if the problems persist, please contact our support at support@geneea.com', file=sys.stderr)
         sys.stderr.flush()
 
-    return res
+    return len(batch) if res else 0
 
 
 def json_post(url, auth, headers, data, session=None):
@@ -94,7 +94,7 @@ def json_post(url, auth, headers, data, session=None):
         )
         return None
 
-    return response.json()
+    return response.json().get('message')
 
 
 def parallel_map(pool, fn, *iterables, **kwargs):

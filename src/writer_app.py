@@ -109,9 +109,9 @@ class WriterApp:
         doc_count = 0
 
         with open(self.params.source_tab_path, 'r', encoding='utf-8') as in_tab:
-            for _ in self.inject(read_csv(in_tab)):
-                doc_count += 1
-                if doc_count % 1000 == 0:
+            for count in self.inject(read_csv(in_tab)):
+                doc_count += count
+                if doc_count % (100 * self.params.doc_batch_size) == 0:
                     self.write_usage(doc_count=doc_count)
                     print(f'successfully exported {doc_count} documents')
                     sys.stdout.flush()
