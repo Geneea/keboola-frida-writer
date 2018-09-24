@@ -158,7 +158,8 @@ class WriterApp:
             'textLemmas': [],
             'language': {'value': analysis['language']},
             'entities': [],
-            'hashtags': []
+            'hashtags': [],
+            'relations': []
         }
 
         if 'sentiment' in analysis:
@@ -166,6 +167,11 @@ class WriterApp:
                 'value': analysis['sentiment']['value'],
                 'label': analysis['sentiment']['label']
             }
+            if 'sentences' in analysis:
+                doc['sentiment']['sentenceVals'] = [
+                    s['sentiment']['value'] if 'sentiment' in s else 0.0
+                    for s in analysis['sentences']
+                ]
 
         if 'sentences' in analysis:
             for sent in analysis['sentences']:
@@ -178,6 +184,7 @@ class WriterApp:
                 sgm = sent.get('segment', 'text')
                 doc[f'{sgm}Lemmas'].append(toks)
 
+        entUidToIdx = dict()
         if 'entities' in analysis:
             for ent in analysis['entities']:
                 inst = [{
@@ -188,17 +195,53 @@ class WriterApp:
                 if ent['type'] in {'topic', 'tag'}:
                     doc['hashtags'].append({
                         'value': ent['text'],
+                        'weight': ent['score'],
                         'type': ent['type'],
                         'uid': ent.get('uid'),
                         'instances': inst
                     })
                 else:
+                    if 'uid' in ent:
+                        entUidToIdx[ent['uid']] = len(doc['entities'])
                     doc['entities'].append({
                         'standardForm': ent['text'],
                         'type': ent['type'],
                         'uid': ent.get('uid'),
                         'instances': inst
                     })
+
+        if 'relations' in analysis:
+            for rel in analysis['relations']:
+                args = []
+                if 'subjectName' in rel:
+                    args.append({
+                        'name': rel['subjectName'],
+                        'type': 'SUBJECT',
+                        'entityIdx': entUidToIdx.get(rel.get('subjectUid'), -1)
+                    })
+                if 'objectName' in rel:
+                    args.append({
+                        'name': rel['objectName'],
+                        'type': 'OBJECT',
+                        'entityIdx': entUidToIdx.get(rel.get('objectUid'), -1)
+                    })
+                snt = {'val': 0.0, 'neg': 0.0, 'pos': 0.0}
+                if 'sentiment' in rel:
+                    snt['val'] = rel['sentiment']['value']
+                sup = [{
+                    'segment': s['segment'],
+                    'tokenIndices': s['tokenIndices']
+                } for s in rel.get('support', [])]
+                doc['relations'].append({
+                    'name': rel['name'],
+                    'type': rel['type'],
+                    'negated': rel['negated'],
+                    'modality': rel['modality'],
+                    'tectoIndices': [],
+                    'args': args,
+                    'sentiment': snt,
+                    'support': sup
+                })
 
         for meta_col in self.params.meta_cols:
             doc[f'f_{meta_col}'] = row[meta_col]
