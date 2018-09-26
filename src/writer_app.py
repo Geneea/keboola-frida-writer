@@ -20,6 +20,7 @@ DOC_BATCH_SIZE = 5
 THREAD_COUNT = 1
 
 DATASET_RE = re.compile(r'^[0-9a-zA-Z_\-]+$')
+DATETIME_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$')
 
 class Params:
 
@@ -40,6 +41,7 @@ class Params:
         self.password = params.get('#password')
         self.id_col = columns.get('id')
         self.data_col = columns.get('binaryData')
+        self.datetime_col = columns.get('datetime')
         self.meta_cols = columns.get('metadata', [])
 
         advanced_params = self.get_advanced_params()
@@ -99,6 +101,8 @@ class WriterApp:
                 sys.stdout.flush()
                 return
             all_cols = [self.params.id_col, self.params.data_col] + self.params.meta_cols
+            if self.params.datetime_col:
+                all_cols.append(self.params.datetime_col)
             for col in all_cols:
                 if col not in row:
                     raise ValueError(f'the source table does not contain column "{col}"')
@@ -137,9 +141,13 @@ class WriterApp:
                     yield res
 
     def get_request(self):
-        req = {}
+        req = {'metadata': []}
+        if self.params.datetime_col:
+            req['metadata'].append('date')
         if self.params.meta_cols:
-            req['metadata'] = [f'f_{meta_col}' for meta_col in self.params.meta_cols]
+            req['metadata'] += [f'f_{meta_col}' for meta_col in self.params.meta_cols]
+        if not req['metadata']:
+            del req['metadata']
         return req
 
     def doc_batch_stream(self, row_stream):
@@ -242,6 +250,10 @@ class WriterApp:
                     'sentiment': snt,
                     'support': sup
                 })
+
+        if self.params.datetime_col:
+            datetime_val = row[self.params.datetime_col]
+            doc['date'] = datetime_val if DATETIME_RE.match(datetime_val) else ''
 
         for meta_col in self.params.meta_cols:
             doc[f'f_{meta_col}'] = row[meta_col]

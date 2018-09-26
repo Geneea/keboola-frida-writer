@@ -46,6 +46,7 @@ Mapped to `/data/config.json`
     "columns": {
       "id": "doc_id",
       "binaryData": "binaryData",
+      "datetime": "date",
       "metadata": ["meta_1", "meta_2"]
     }
   }

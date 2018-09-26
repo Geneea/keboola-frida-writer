@@ -7,4 +7,5 @@ Parameters:
 Input:
 * `id` - ID of the document
 * `binaryData` - serialized data with NLP analysis results as Base64
+* `datetime` - optional datetime field for the document, in `YYYY-MM-DDThh:mm:ssZ` format
 * `metadata` - optional meta-data fields for the document
