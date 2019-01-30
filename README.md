@@ -47,7 +47,8 @@ Mapped to `/data/config.json`
       "id": "doc_id",
       "binaryData": "binaryData",
       "datetime": "date",
-      "metadata": ["meta_1", "meta_2"]
+      "metadata": ["meta_1", "meta_2"],
+      "metadataMultival": ["meta_3"]
     }
   }
 }

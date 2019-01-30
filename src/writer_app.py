@@ -18,6 +18,7 @@ from kbc_tools import read_csv, slice_stream, make_batch_request, parallel_map, 
 FRIDA_URL = 'https://frida.geneea.com/services/franz'
 DOC_BATCH_SIZE = 5
 THREAD_COUNT = 1
+MULTI_VAL_SEP = ','
 
 DATASET_RE = re.compile(r'^[0-9a-zA-Z_\-]+$')
 DATETIME_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$')
@@ -43,10 +44,12 @@ class Params:
         self.data_col = columns.get('binaryData')
         self.datetime_col = columns.get('datetime')
         self.meta_cols = columns.get('metadata', [])
+        self.meta_multi_cols = columns.get('metadataMultival', [])
 
         advanced_params = self.get_advanced_params()
         self.doc_batch_size = int(advanced_params.get('doc_batch_size', DOC_BATCH_SIZE))
         self.thread_count = int(advanced_params.get('thread_count', THREAD_COUNT))
+        self.multi_val_sep = advanced_params.get('multi_val_sep', MULTI_VAL_SEP)
 
         self.validate()
 
@@ -73,6 +76,8 @@ class Params:
             raise ValueError('the "columns.id" and "columns.binaryData" are required parameters')
         if self.meta_cols and not isinstance(self.meta_cols, list):
             raise ValueError('invalid "columns.metadata" parameter, it needs to be an array of column names')
+        if self.meta_multi_cols and not isinstance(self.meta_multi_cols, list):
+            raise ValueError('invalid "columns.metadataMultival" parameter, it needs to be an array of column names')
         if self.thread_count > 8:
             raise ValueError('the "thread_count" parameter can not be greater than 8')
 
@@ -100,7 +105,7 @@ class WriterApp:
                 print('WARN: could not read any data from the source table')
                 sys.stdout.flush()
                 return
-            all_cols = [self.params.id_col, self.params.data_col] + self.params.meta_cols
+            all_cols = [self.params.id_col, self.params.data_col] + self.params.meta_cols + self.params.meta_multi_cols
             if self.params.datetime_col:
                 all_cols.append(self.params.datetime_col)
             for col in all_cols:
@@ -146,6 +151,8 @@ class WriterApp:
             req['metadata'].append('date')
         if self.params.meta_cols:
             req['metadata'] += [f'f_{meta_col}' for meta_col in self.params.meta_cols]
+        if self.params.meta_multi_cols:
+            req['metadata'] += [f'a_{meta_col}' for meta_col in self.params.meta_multi_cols]
         if not req['metadata']:
             del req['metadata']
         return req
@@ -257,6 +264,9 @@ class WriterApp:
 
         for meta_col in self.params.meta_cols:
             doc[f'f_{meta_col}'] = row[meta_col]
+        for meta_col in self.params.meta_multi_cols:
+            multi_vals = row[meta_col].split(self.params.multi_val_sep)
+            doc[f'a_{meta_col}'] = list(filter(None, map(str.strip, multi_vals)))
 
         return doc
 
